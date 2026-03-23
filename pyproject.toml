@@ -1,0 +1,14 @@
+[project]
+name = "agent-profiler"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "orjson>=3.11.7",
+    "pydantic>=2.12.5",
+    "pytest>=9.0.2",
+    "pytest-snapshot>=0.9.0",
+    "rich>=14.3.3",
+    "typer>=0.24.1",
+]
