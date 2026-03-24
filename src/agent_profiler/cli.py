@@ -26,6 +26,7 @@ from rich import box
 from agent_profiler.analyzer import ProfileMetrics, compute_metrics
 from agent_profiler.analyzer.comparison import RunComparison, compare_runs
 from agent_profiler.collector.openclaw_converter import convert_openclaw_session, write_trace
+from agent_profiler.exporter.perfetto import export_perfetto
 from agent_profiler.schema.trace import load_trace, TraceValidationError
 
 app = typer.Typer(
@@ -142,6 +143,9 @@ def analyze(
     as_json: bool = typer.Option(
         False, "--json", help="Output ProfileMetrics as JSON instead of table"
     ),
+    perfetto: bool = typer.Option(
+        False, "--export-perfetto", help="Also export a Perfetto-compatible JSON trace"
+    ),
 ) -> None:
     """Analyze a trace file and report profiling metrics."""
     if not trace_path.exists():
@@ -252,6 +256,19 @@ def analyze(
     # ---- Verdict ----
     verdict = _format_verdict(metrics, trace if metrics.resource_profile else None)
     console.print(f"\n[bold yellow]{verdict}[/bold yellow]")
+
+    # ---- Perfetto export ----
+    if perfetto:
+        perfetto_path = trace_path.with_suffix(".perfetto.json")
+        export_perfetto(
+            trace,
+            perfetto_path,
+            system_samples_path=system_samples,
+        )
+        console.print(
+            f"\n[green]✓[/green] Trace exported. "
+            f"Open https://ui.perfetto.dev and load {perfetto_path}"
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -526,6 +543,44 @@ def validate(
 
 
 # ---------------------------------------------------------------------------
+# export-perfetto
+# ---------------------------------------------------------------------------
+
+
+@app.command(name="export-perfetto")
+def export_perfetto_cmd(
+    trace_path: Path = typer.Argument(..., help="Path to .jsonl trace file"),
+    output: Optional[Path] = typer.Option(
+        None, "-o", "--output", help="Output path (default: <trace_stem>.perfetto.json)"
+    ),
+    system_samples: Optional[Path] = typer.Option(
+        None, "--system-samples", help="Path to system-samples JSONL"
+    ),
+) -> None:
+    """Convert a profiler trace to Perfetto-compatible JSON format."""
+    if not trace_path.exists():
+        err_console.print(f"[red]Error:[/red] File not found: {trace_path}")
+        raise typer.Exit(1)
+
+    try:
+        trace = load_trace(trace_path, strict=True)
+    except TraceValidationError as exc:
+        err_console.print(f"[red]Trace validation failed:[/red]\n{exc}")
+        raise typer.Exit(1)
+
+    out_path = output or trace_path.with_suffix(".perfetto.json")
+    export_perfetto(
+        trace,
+        out_path,
+        system_samples_path=system_samples,
+    )
+    console.print(
+        f"[green]✓[/green] Trace exported. "
+        f"Open https://ui.perfetto.dev and load {out_path}"
+    )
+
+
+# ---------------------------------------------------------------------------
 # demo
 # ---------------------------------------------------------------------------
 
@@ -744,6 +799,9 @@ def monitor(
     program_tool: Optional[str] = typer.Option(
         None, "--program-tool", help="Tool name to treat as program_under_test"
     ),
+    perfetto: bool = typer.Option(
+        False, "--export-perfetto", help="Also export a Perfetto-compatible JSON trace"
+    ),
 ) -> None:
     """Run a command with system monitoring, then analyze the results.
 
@@ -858,6 +916,18 @@ def monitor(
 
             console.print()
             _print_metrics_table(console, trace_path.name, metrics, trace)
+
+            if perfetto:
+                perfetto_path = out_dir / "trace.perfetto.json"
+                export_perfetto(
+                    trace,
+                    perfetto_path,
+                    system_samples_path=samples_path,
+                )
+                console.print(
+                    f"\n[green]✓[/green] Trace exported. "
+                    f"Open https://ui.perfetto.dev and load {perfetto_path}"
+                )
         except Exception as exc:
             err_console.print(
                 f"[yellow]Warning:[/yellow] Could not analyze OpenClaw session: {exc}"
