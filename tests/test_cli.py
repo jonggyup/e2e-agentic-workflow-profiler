@@ -194,6 +194,26 @@ class TestDemoCommand:
 
 
 # ---------------------------------------------------------------------------
+# import-openclaw
+# ---------------------------------------------------------------------------
+
+
+class TestImportOpenclawCommand:
+    def test_export_perfetto_flag_produces_file(self, tmp_path: Path) -> None:
+        src = FIXTURES / "openclaw_happy.jsonl"
+        # Copy fixture into tmp_path so output files don't pollute the repo
+        dest = tmp_path / "openclaw_happy.jsonl"
+        dest.write_bytes(src.read_bytes())
+        result = runner.invoke(
+            app, ["import-openclaw", str(dest), "--export-perfetto"]
+        )
+        assert result.exit_code == 0, result.output
+        perfetto_path = tmp_path / "openclaw_happy.profiler.perfetto.json"
+        assert perfetto_path.exists(), f"Expected {perfetto_path} to exist"
+        assert "perfetto.dev" in result.output
+
+
+# ---------------------------------------------------------------------------
 # monitor
 # ---------------------------------------------------------------------------
 

@@ -659,6 +659,9 @@ def import_openclaw(
     program_tool: Optional[str] = typer.Option(
         None, "--program-tool", help="Tool name to treat as program_under_test"
     ),
+    perfetto: bool = typer.Option(
+        False, "--export-perfetto", help="Also export a Perfetto-compatible JSON trace"
+    ),
 ) -> None:
     """Convert an OpenClaw session transcript to a profiler trace, then analyze it."""
     if not session_path.exists():
@@ -728,6 +731,15 @@ def import_openclaw(
 
     verdict = _format_verdict(metrics)
     console.print(f"\n[bold yellow]{verdict}[/bold yellow]")
+
+    # ---- Perfetto export ----
+    if perfetto:
+        perfetto_path = out_path.with_suffix(".perfetto.json")
+        export_perfetto(trace, perfetto_path)
+        console.print(
+            f"\n[green]✓[/green] Trace exported. "
+            f"Open https://ui.perfetto.dev and load {perfetto_path}"
+        )
 
 
 # ---------------------------------------------------------------------------
