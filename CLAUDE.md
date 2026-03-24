@@ -29,6 +29,7 @@ performance AND correctness to explain where time is wasted and why.
 - Type hints on all public functions.
 - No print() — use Rich library or structured logging.
 - Never mix "add a metric" with "add an integration" in one change.
+- Perform git commit after every update with detailed commit message about what has changed from previous versions.
 
 ## Event model
 Five event types: Run, Attempt, LoopIteration, ModelCall, ToolCall, Evaluation.

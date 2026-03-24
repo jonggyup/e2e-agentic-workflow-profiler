@@ -1,3 +1,10 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/agent_profiler"]
+
 [project]
 name = "agent-profiler"
 version = "0.1.0"
@@ -6,9 +13,22 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "orjson>=3.11.7",
+    "psutil>=7.2.2",
     "pydantic>=2.12.5",
     "pytest>=9.0.2",
     "pytest-snapshot>=0.9.0",
     "rich>=14.3.3",
     "typer>=0.24.1",
 ]
+
+[project.scripts]
+agent-profiler = "agent_profiler.cli:app"
+
+[dependency-groups]
+dev = [
+    "ruff>=0.15.7",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
